@@ -65,7 +65,7 @@ The spcecho commands used to add the echo controls to rroll.spc were:
 
 All samples used were sourced or created by me, without ripping them from any games
 
-# References
+# Resources Used
 1. SPC700 Reference https://wiki.superfamicom.org/spc700-reference#dsp-983
 2. SPC and RSN File Format https://wiki.superfamicom.org/spc-and-rsn-file-format
 3. XM2SNES (by eKid, mirror by osoumen) https://github.com/osoumen/XMSNES
