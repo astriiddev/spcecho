@@ -51,7 +51,7 @@
 ![image](https://user-images.githubusercontent.com/98296288/236651901-a60aae62-8402-4719-aa9e-026fa2d16f6e.png)
 
 # Test Files
-Three test files are included:
+Three test files (located in the folder testfiles) are included:
 
 rroll.xm is the Fasttracker II module before being converted with XM2SNES
 
