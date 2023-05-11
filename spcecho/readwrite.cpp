@@ -4,7 +4,7 @@ char *fileBuffer;
 long long fileLength;
 
 /* SPC700 DSP registers begin at 10100h */
-const unsigned int addressOffset = 0x10100;
+static const unsigned int addressOffset = 0x10100;
 
 void fileRead(const std::string& spcName)
 {
