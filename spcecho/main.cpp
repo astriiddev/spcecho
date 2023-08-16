@@ -56,7 +56,7 @@ void usage()
 
     std::cout << "\n"
 
-        "SPC Echo Adder v1.3 by _astriid_\n\n"
+        "SPC Echo Adder v1.5 by _astriid_\n\n"
         "Adds or changes echo controls for .spc SNES music files. Designed \n"
         "primarily for use with XM2SNES converted .spc files to add echo to\n"
         "SNES music made with Fasttracker II .xm files and converted to .spc.\n"
