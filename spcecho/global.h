@@ -2,11 +2,8 @@
 #define GLOBAL_H
 
 
-#include <fstream>
 #include <string>
-#include <iomanip>
 #include <iostream>
-#include <math.h>
 
 #include "readwrite.h"
 #include "addresses.h"

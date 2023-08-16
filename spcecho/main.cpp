@@ -23,12 +23,8 @@
     cannot exceed address $FFFFh. Too low of a value for the address and the echo buffer will cut 
     into the music data buffer and cause the SPC player to glitch out. Similarly, too high of a 
     value for the address with too high a value for the echo timing will cause a buffer overrun 
-    and will also cause your SPC player to glitch out. I recommend starting with a value of C0h 
-    to put the echo buffer at address $C000h with a short echo and the playing around from there. 
-    If your SPC emulator has an ARAM viewer (such as Plogue's Chipsynth SFC) and you're using an
-    XM2SNES converted .spc file or an .spc file without echo, you can put the file in the ARAM
-    viewer before running it through this program in order to get a good sense of where your music
-    data buffer ends.
+    and will also cause your SPC player to glitch out. You can set the buffer address manually,
+    but I recommend allowing the program to auto-detect the best address location.
 
     Will hopefully add controls for the FIR filters for the echo in the SPC700 once I figure out 
     how they work. Changing the values in their DSP address is the easy part. The hard part is 
@@ -49,6 +45,12 @@
 
 #include "global.h"
 
+#ifdef  _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#define _CRTDBG_MAP_ALLOC_NEW
+#include <crtdbg.h>
+#endif
+
 void usage()
 {
 
@@ -67,44 +69,39 @@ void usage()
         "Usage: spcecho inputname.spc [options] [outputname.spc]\n"
         "[NOTE: if outputname is not entered, inputname will be used]\n\n"
         "Options:\n\n"
-        "-l | left echo volume\t | percentage of left echo volume between -100 and 100\n"
-        "-r | right echo volume\t | percentage of right echo volume between -100 and 100\n"
-        "-f | feedback\t\t | percentage of feedback between -100 and 100\n"
+        "-l | left echo volume\t | percentage of left echo volume between -100 and 100\n\n"
+        "-r | right echo volume\t | percentage of right echo volume between -100 and 100\n\n"
+        "-f | feedback\t\t | percentage of feedback between -100 and 100\n\n"
         "-t | echo timing in ms\t | 0-240ms (will be rounded to nearest 16ms increment)\n"
         "\t\t\t   [values: 16 | 32 | 48 | 64 | 80 | 96 | 112 | 128\n\t\t\t\t    144 | 160 | 176 | 192 | 208 | 224 | 240 ]\n"
-        "\t\t\t   [NOTE: echo buffer uses 2kb for every 16ms. Music data \n\t\t\t   AND echo buffer must not exceed 64kb]\n"
+        "\t\t\t   [NOTE: echo buffer uses 2kb for every 16ms. Music data \n\t\t\t   AND echo buffer must not exceed 64kb]\n\n"
         "-c | channel\t\t | turns echo on or off for channels 1-8. Use X to turn on\n\t\t\t   echo for channel and O to turn off echo for channel.\n"
-        "\t\t\t   [eg: XOXOXOOO will turn echo on for 1, 3, and 5\n\t\t\t   but keep echo off for 2, 4, 6, 7, and 8]\n"
+        "\t\t\t   [eg: XOXOXOOO will turn echo on for 1, 3, and 5\n\t\t\t   but keep echo off for 2, 4, 6, 7, and 8]\n\n"
         "-a | echo buffer address | address in hex from 02-FF for echo buffer\n"
-        "\t\t\t   [NOTE: this WILL take some playing around with to get correct.\n"
-        "\t\t\t   Too low of a value and you will bleed into your music buffer.\n"
-        "\t\t\t   Too high of a value will cause buffer overrun.\n"
-        "\t\t\t   Either case will cause your SPC player to glitch out.\n"
-        "\t\t\t   Recommendded to start at value of C0 to set buffer\n"
-        "\t\t\t   at address $C000h and play around with echo timing and\n"
-        "\t\t\t   address until desired timing length is obtained without\n"
-        "\t\t\t   any glitching.]\n\n";
+        "\t\t\t   [NOTE: not using this option will automatically set the\n"
+        "\t\t\t   echo buffer to the address block immediately after the\n\t\t\t   SPC's audio data. Recommended to not use this option\n"
+        "\t\t\t   unless you absolutely want to specify the buffer address]\n\n";
 
     exit(0);
-
 }
 
 int main(int argc, char* argv[])
 {
     if(argc <= 1)
-    {
         usage();
-    }
     
     std::string writeName = argv[1];
     fileRead(writeName);
 
+    bool customAddress = false;
+
+
     for (int i = 1; i < argc; ++i, ++argv)
     {
         /* outputs error if invalid argument is made */
-        if ((argv[1] && i % 2 != 0 && argv[0][0] != 's') && (argv[0][0] != '-' || 
-            (argv[0][1] != 'l' && argv[0][1] != 'r' && argv[0][1] != 'f' && 
-             argv[0][1] != 't' && argv[0][1] != 'c' && argv[0][1] != 'a')))
+        if (argv[0][0] == '-' && isalpha(argv[0][1]) &&
+          !(argv[0][1] == 'l' || argv[0][1] == 'r' || argv[0][1] == 'f' ||
+            argv[0][1] == 't' || argv[0][1] == 'c' || argv[0][1] == 'a'))
         {
             std::cerr << "\n!!!! Cannot read options! !!!!\n";
             usage();
@@ -148,7 +145,7 @@ int main(int argc, char* argv[])
                     input range is 02h-FFh for buffer addres of $0200h-$FF00h, but recommended high address
                     as to not interfere with music data buffer. C0h seems to be a decent starting point. */
                 case 'a':
-
+                    customAddress = true;
                     valueSet(argv[0][1], bufferAddress(argv[1]));
                     break;
             }
@@ -157,22 +154,21 @@ int main(int argc, char* argv[])
         
     }
 
+    if (!customAddress)
+        echoAddress();
+
     // if no output file name is declared, use input file name //
     if(argv[-1][0] == '-' && !isdigit(argv[-1][1]))
-        {
-
-            fileWrite(writeName);
-
-        }
+        fileWrite(writeName);
 
     // write output file name //
     if(argv[-1][0] != '-' || isdigit(argv[-1][1]))
-        {
+    {
+        writeName = argv[0];
+        fileWrite(writeName);
+    }
+    _CrtDumpMemoryLeaks();
 
-            writeName = argv[0];
-            fileWrite(writeName);
-
-        }
     return 0;
 
 }

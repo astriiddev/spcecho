@@ -1,10 +1,13 @@
+#include <fstream>
+#include <iomanip>
+
 #include "global.h"
 
 char *fileBuffer;
 long long fileLength;
 
 /* SPC700 DSP registers begin at 10100h */
-const unsigned int addressOffset = 0x10100;
+static const unsigned int addressOffset = 0x10100;
 
 void fileRead(const std::string& spcName)
 {
@@ -30,7 +33,32 @@ void fileRead(const std::string& spcName)
 
         spcRead.close();
     }
+}
 
+void echoAddress()
+{
+    for (int i = 0xFFFF; i > 0; i--)
+    {
+        if (i < fileLength)
+        {
+            if (fileBuffer[i] != 0x00 && fileBuffer[i] != 0xFF)
+            {
+                std::cout << "\nEnd of audio data found at: " <<
+                    std::setw(4) << std::setfill('0') << std::hex <<
+                    std::uppercase << i << '\n';
+
+                uint8_t echoAddy = ((i & ~0x00FF) >> 8) + 1;
+
+                std::cout << "Viable echo buffer address at: " <<
+                    std::setw(2) << std::setfill('0') <<std::hex <<
+                    std::uppercase << +echoAddy << "00\n";
+
+                fileBuffer[addressOffset + 0x6D] = echoAddy;
+
+                break;
+            }
+        }
+    }
 }
 
 void valueSet(char v, int controlValue)
@@ -75,11 +103,62 @@ void valueSet(char v, int controlValue)
     }
 }
 
+static bool overflowCheck()
+{
+    /* Gives option to trunicate speed to fit buffer size, proceed with buffer overflow, or exit */
+
+    char trunicate = NULL, proceed = NULL;
+    int  trunicatedSpeed = (0xFF - (uint8_t)fileBuffer[addressOffset + 0x6D]) * 2;
+
+    std::cout << "\nCAUTION: buffer overflow detected! Consider lowering echo speed to: " <<
+        std::dec << trunicatedSpeed << "ms\nLower echo speed ? (y / n) ";
+    
+    std::cin >> trunicate;
+
+    if (toupper(trunicate) == 'Y')
+    {
+        fileBuffer[addressOffset + 0x7D] = trunicatedSpeed / 16;
+        return true;
+    }
+
+    else if (toupper(trunicate) == 'N')
+    {
+        std::cout <<
+            "\nEcho buffer overflow can cause unexpected and/or unwanted glitches in SPC playback.\n"
+            "Proceed anyway ? (y / n) ";
+
+        std::cin >> proceed;
+
+        if (toupper(proceed) == 'Y')
+            return true;
+
+        else if (toupper(proceed) == 'N')
+            return false;
+
+        else
+            return overflowCheck();
+    }
+    else
+        return overflowCheck();
+}
+
 void fileWrite(const std::string& spcName)
 {
     /* if no .spc extension is inputted, attempts to locate .spc file of input */
     bool hasExtension = (spcName.find(".spc") != std::string::npos);
     char overWrite;
+
+    /* Checks for buffer overflow. Every 16 ms takes 2kb of buffer so echo buffer address + echo speed must be under end of SPC data */
+    if ((fileBuffer[addressOffset + 0x7D] * 0x800) + uint16_t(fileBuffer[addressOffset + 0x6D] << 8) > 0xFFFF)
+    {
+        if (!overflowCheck())
+        {
+            hasExtension ? std::cerr << "\n!!!! " << spcName << " not saved! !!!!\n" :
+                std::cerr << "\n!!!! " << spcName + ".spc" << " not saved! !!!!\n";
+
+            exit(0);
+        }
+    }
 
     std::ofstream spcWrite;
     if (spcWrite)
@@ -102,9 +181,7 @@ void fileWrite(const std::string& spcName)
                 hasExtension ? std::cerr << "\n!!!! " << spcName << " not saved! !!!!\n" :
                     std::cerr << "\n!!!! " << spcName + ".spc" << " not saved! !!!!\n";
                 exit(0);
-
             }
-
         }
 
         /* informs user that echo values are saved */
