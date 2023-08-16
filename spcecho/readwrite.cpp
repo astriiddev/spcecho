@@ -110,6 +110,8 @@ static bool overflowCheck()
     char truncate = NULL, proceed = NULL;
     int  truncatedSpeed = (0xFF - (uint8_t)fileBuffer[addressOffset + 0x6D]) * 2;
 
+    truncatedSpeed -= truncatedSpeed % 16;
+    
     std::cout << "\nCAUTION: buffer overflow detected! Consider lowering echo speed to: " <<
         std::dec << truncatedSpeed << "ms\nLower echo speed ? (y / n) ";
     
