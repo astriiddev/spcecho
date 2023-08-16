@@ -108,18 +108,16 @@ static bool overflowCheck()
     /* Gives option to trunicate speed to fit buffer size, proceed with buffer overflow, or exit */
 
     char truncate = NULL, proceed = NULL;
-    int  truncatedSpeed = (0xFF - (uint8_t)fileBuffer[addressOffset + 0x6D]) * 2;
+    int  truncatedSpeed = (0xFF - (uint8_t)fileBuffer[addressOffset + 0x6D]) >> 3;
 
-    truncatedSpeed -= truncatedSpeed % 16;
-    
     std::cout << "\nCAUTION: buffer overflow detected! Consider lowering echo speed to: " <<
-        std::dec << truncatedSpeed << "ms\nLower echo speed ? (y / n) ";
+        std::dec << (truncatedSpeed << 4) << "ms\nLower echo speed ? (y / n) ";
     
     std::cin >> truncate;
 
     if (toupper(truncate) == 'Y')
     {
-        fileBuffer[addressOffset + 0x7D] = truncatedSpeed / 16;
+        fileBuffer[addressOffset + 0x7D] = truncatedSpeed;
         return true;
     }
 
@@ -151,7 +149,7 @@ void fileWrite(const std::string& spcName)
     char overWrite;
 
     /* Checks for buffer overflow. Every 16 ms takes 2kb of buffer so echo buffer address + echo speed must be under end of SPC data */
-    if ((fileBuffer[addressOffset + 0x7D] * 0x800) + uint16_t(fileBuffer[addressOffset + 0x6D] << 8) > 0xFFFF)
+    if ((fileBuffer[addressOffset + 0x7D] << 3) + uint16_t(fileBuffer[addressOffset + 0x6D]) > 0xFF)
     {
         if (!overflowCheck())
         {
