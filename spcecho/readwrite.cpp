@@ -107,21 +107,21 @@ static bool overflowCheck()
 {
     /* Gives option to trunicate speed to fit buffer size, proceed with buffer overflow, or exit */
 
-    char trunicate = NULL, proceed = NULL;
-    int  trunicatedSpeed = (0xFF - (uint8_t)fileBuffer[addressOffset + 0x6D]) * 2;
+    char truncate = NULL, proceed = NULL;
+    int  truncatedSpeed = (0xFF - (uint8_t)fileBuffer[addressOffset + 0x6D]) * 2;
 
     std::cout << "\nCAUTION: buffer overflow detected! Consider lowering echo speed to: " <<
-        std::dec << trunicatedSpeed << "ms\nLower echo speed ? (y / n) ";
+        std::dec << truncatedSpeed << "ms\nLower echo speed ? (y / n) ";
     
-    std::cin >> trunicate;
+    std::cin >> truncate;
 
-    if (toupper(trunicate) == 'Y')
+    if (toupper(truncate) == 'Y')
     {
-        fileBuffer[addressOffset + 0x7D] = trunicatedSpeed / 16;
+        fileBuffer[addressOffset + 0x7D] = truncatedSpeed / 16;
         return true;
     }
 
-    else if (toupper(trunicate) == 'N')
+    else if (toupper(truncate) == 'N')
     {
         std::cout <<
             "\nEcho buffer overflow can cause unexpected and/or unwanted glitches in SPC playback.\n"
