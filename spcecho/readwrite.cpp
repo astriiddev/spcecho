@@ -149,7 +149,7 @@ void fileWrite(const std::string& spcName)
     char overWrite;
 
     /* Checks for buffer overflow. Every 16 ms takes 2kb of buffer so echo buffer address + echo speed must be under end of SPC data */
-    if ((fileBuffer[addressOffset + 0x7D] << 3) + uint16_t(fileBuffer[addressOffset + 0x6D]) > 0xFF)
+    if (int(uint16_t(fileBuffer[addressOffset + 0x7D] << 11) + uint16_t(fileBuffer[addressOffset + 0x6D] << 8)) > 0xFFFF)
     {
         if (!overflowCheck())
         {

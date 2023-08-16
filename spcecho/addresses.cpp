@@ -97,7 +97,7 @@ int millisecondToInt(const std::string& echoSpeed)
     }
 
     /* scales down time into 8-bit value, rounding to nearest bit */
-    return int(round(float(timingVal) / 16));
+    return (timingVal + 8) >> 4;
 }
 
 int bufferAddress(const std::string& bufferHex)
